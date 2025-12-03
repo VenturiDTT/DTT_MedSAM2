@@ -82,7 +82,14 @@ def build_sam2(
             "++model.sam_mask_decoder_extra_args.dynamic_multimask_stability_thresh=0.98",
         ]
     # Read config and init model
-    cfg = compose(config_name=config_file, overrides=hydra_overrides_extra)
+    if isinstance(config_file, dict):
+        cfg = OmegaConf.create(config_file)
+    elif hasattr(config_file, "__dict__") and "OmegaConf" in config_file.__class__.__name__:
+        cfg = config_file # already DictConfig
+    else:
+        # YAML path
+        cfg = compose(config_name=config_file, overrides=hydra_overrides_extra)
+
     OmegaConf.resolve(cfg)
     model = instantiate(cfg.model, _recursive_=True)
     _load_checkpoint(model, ckpt_path)
@@ -123,7 +130,14 @@ def build_sam2_video_predictor(
     hydra_overrides.extend(hydra_overrides_extra)
 
     # Read config and init model
-    cfg = compose(config_name=config_file, overrides=hydra_overrides)
+    if isinstance(config_file, dict):
+        cfg = OmegaConf.create(config_file)
+    elif hasattr(config_file, "__dict__") and "OmegaConf" in config_file.__class__.__name__:
+        cfg = config_file # already DictConfig
+    else:
+        # YAML path
+        cfg = compose(config_name=config_file, overrides=hydra_overrides)
+        
     OmegaConf.resolve(cfg)
     model = instantiate(cfg.model, _recursive_=True)
     _load_checkpoint(model, ckpt_path)
@@ -163,7 +177,14 @@ def build_sam2_video_predictor_npz(
     hydra_overrides.extend(hydra_overrides_extra)
 
     # Read config and init model
-    cfg = compose(config_name=config_file, overrides=hydra_overrides)
+    if isinstance(config_file, dict):
+        cfg = OmegaConf.create(config_file)
+    elif hasattr(config_file, "__dict__") and "OmegaConf" in config_file.__class__.__name__:
+        cfg = config_file # already DictConfig
+    else:
+        # YAML path
+        cfg = compose(config_name=config_file, overrides=hydra_overrides)
+        
     OmegaConf.resolve(cfg)
     model = instantiate(cfg.model, _recursive_=True)
     _load_checkpoint(model, ckpt_path)
