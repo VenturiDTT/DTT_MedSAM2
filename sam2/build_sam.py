@@ -103,13 +103,13 @@ def build_sam2(
     if isinstance(config_file, dict):
         # pyd/pyc
         cfg = OmegaConf.create(config_file)
-        cfg = apply_overrides(cfg, hydra_overrides)
+        cfg = apply_overrides(cfg, hydra_overrides_extra)
     elif isinstance(config_file, DictConfig):
         cfg = config_file
-        cfg = apply_overrides(cfg, hydra_overrides)
+        cfg = apply_overrides(cfg, hydra_overrides_extra)
     else:
         # YAML path
-        cfg = compose(config_name=config_file, overrides=hydra_overrides)
+        cfg = compose(config_name=config_file, overrides=hydra_overrides_extra)
     
     OmegaConf.resolve(cfg)
     model = instantiate(cfg.model, _recursive_=True)
