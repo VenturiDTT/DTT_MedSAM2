@@ -9,7 +9,7 @@ import logging
 import torch
 from hydra import compose
 from hydra.utils import instantiate
-from omegaconf import OmegaConf
+from omegaconf import OmegaConf, DictConfig
 
 HF_MODEL_ID_TO_FILENAMES = {
     "facebook/sam2-hiera-tiny": (
@@ -60,6 +60,23 @@ def get_best_available_device():
         return "cpu"
 
 
+def apply_overrides(cfg: DictConfig, overrides: list[str]) -> DictConfig:
+    """Applica override stile Hydra ad una DictConfig esistente usando solo OmegaConf."""
+    if not overrides:
+        return cfg
+
+    # Rimuovi i "++" all'inizio (Hydra: allow new keys)
+    dotlist = [ov.lstrip("+") for ov in overrides]
+
+    overrides_cfg = OmegaConf.from_dotlist(dotlist)
+
+    # Disattiva temporaneamente struct mode per permettere chiavi nuove
+    with open_dict(cfg):
+        cfg.merge_with(overrides_cfg)
+
+    return cfg
+
+
 def build_sam2(
     config_file,
     ckpt_path=None,
@@ -81,15 +98,19 @@ def build_sam2(
             "++model.sam_mask_decoder_extra_args.dynamic_multimask_stability_delta=0.05",
             "++model.sam_mask_decoder_extra_args.dynamic_multimask_stability_thresh=0.98",
         ]
+        
     # Read config and init model
     if isinstance(config_file, dict):
+        # pyd/pyc
         cfg = OmegaConf.create(config_file)
-    elif hasattr(config_file, "__dict__") and "OmegaConf" in config_file.__class__.__name__:
-        cfg = config_file # already DictConfig
+        cfg = apply_overrides(cfg, hydra_overrides)
+    elif isinstance(config_file, DictConfig):
+        cfg = config_file
+        cfg = apply_overrides(cfg, hydra_overrides)
     else:
         # YAML path
-        cfg = compose(config_name=config_file, overrides=hydra_overrides_extra)
-
+        cfg = compose(config_name=config_file, overrides=hydra_overrides)
+    
     OmegaConf.resolve(cfg)
     model = instantiate(cfg.model, _recursive_=True)
     _load_checkpoint(model, ckpt_path)
@@ -130,14 +151,18 @@ def build_sam2_video_predictor(
     hydra_overrides.extend(hydra_overrides_extra)
 
     # Read config and init model
+    
     if isinstance(config_file, dict):
+        # pyd/pyc
         cfg = OmegaConf.create(config_file)
-    elif hasattr(config_file, "__dict__") and "OmegaConf" in config_file.__class__.__name__:
-        cfg = config_file # already DictConfig
+        cfg = apply_overrides(cfg, hydra_overrides)
+    elif isinstance(config_file, DictConfig):
+        cfg = config_file
+        cfg = apply_overrides(cfg, hydra_overrides)
     else:
         # YAML path
         cfg = compose(config_name=config_file, overrides=hydra_overrides)
-        
+    
     OmegaConf.resolve(cfg)
     model = instantiate(cfg.model, _recursive_=True)
     _load_checkpoint(model, ckpt_path)
@@ -145,6 +170,7 @@ def build_sam2_video_predictor(
     if mode == "eval":
         model.eval()
     return model
+
 
 def build_sam2_video_predictor_npz(
     config_file,
@@ -176,15 +202,17 @@ def build_sam2_video_predictor_npz(
         ]
     hydra_overrides.extend(hydra_overrides_extra)
 
-    # Read config and init model
     if isinstance(config_file, dict):
+        # pyd/pyc
         cfg = OmegaConf.create(config_file)
-    elif hasattr(config_file, "__dict__") and "OmegaConf" in config_file.__class__.__name__:
-        cfg = config_file # already DictConfig
+        cfg = apply_overrides(cfg, hydra_overrides)
+    elif isinstance(config_file, DictConfig):
+        cfg = config_file
+        cfg = apply_overrides(cfg, hydra_overrides)
     else:
         # YAML path
         cfg = compose(config_name=config_file, overrides=hydra_overrides)
-        
+    
     OmegaConf.resolve(cfg)
     model = instantiate(cfg.model, _recursive_=True)
     _load_checkpoint(model, ckpt_path)
@@ -192,7 +220,6 @@ def build_sam2_video_predictor_npz(
     if mode == "eval":
         model.eval()
     return model
-
 
 
 def _hf_download(model_id):
