@@ -9,7 +9,7 @@ import logging
 import torch
 from hydra import compose
 from hydra.utils import instantiate
-from omegaconf import OmegaConf, DictConfig
+from omegaconf import OmegaConf, DictConfig, open_dict
 
 HF_MODEL_ID_TO_FILENAMES = {
     "facebook/sam2-hiera-tiny": (
